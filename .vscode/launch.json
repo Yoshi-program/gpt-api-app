@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "port": 9230,
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Next: Node",
+        "runtimeExecutable": "npm",
+        "cwd": "${workspaceFolder}",
+        "runtimeArgs": ["run", "debug"],
+        "console": "integratedTerminal",
+      },
+    ]
+  }

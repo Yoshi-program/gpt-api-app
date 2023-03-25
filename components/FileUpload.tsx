@@ -7,19 +7,26 @@ interface FileUploadProps {
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onSummarized }) => {
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    setSelectedFile(file);
+  };
+
+  const handleSummarize = async () => {
+    if (selectedFile) {
+      setLoading(true);
       try {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', selectedFile);
 
         const response = await fetch('/api/summarize', {
           method: 'POST',
           body: formData,
         });
+
+        console.log(response)
 
         if (response.ok) {
           const data = await response.json();
@@ -30,8 +37,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onSummarized }) => {
       } catch (error) {
         console.error(error);
       }
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -44,10 +51,27 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onSummarized }) => {
         onChange={handleFileChange}
       />
       <label htmlFor="file-upload">
-        <Button variant="contained" color="primary" component="span" disabled={loading}>
-          Upload File
+        <Button variant="contained" color="primary" component="span">
+          Select File
         </Button>
       </label>
+      {selectedFile && (
+        <Box mt={2}>
+          <Typography variant="subtitle1">
+            Selected file: {selectedFile.name}
+          </Typography>
+        </Box>
+      )}
+      <Box mt={2}>
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handleSummarize}
+          disabled={!selectedFile || loading}
+        >
+          Summarize
+        </Button>
+      </Box>
       {loading && (
         <Box mt={2}>
           <CircularProgress />

@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import nextConnect from 'next-connect';
+import { Configuration, OpenAIApi } from "openai";
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
@@ -22,7 +23,10 @@ interface CustomNextApiRequest extends NextApiRequest {
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 async function handleFile(buffer: Buffer, mimetype: string): Promise<string> {
   if (mimetype === 'application/pdf') {
@@ -37,25 +41,15 @@ async function handleFile(buffer: Buffer, mimetype: string): Promise<string> {
 }
 
 async function summarizeText(text: string): Promise<string> {
-  const response = await axios.post(
-    'https://api.openai.com/v1/engines/davinci-codex/completions',
-    {
-      prompt: `Please summarize the following text:\n\n${text}`,
-      max_tokens: 100,
-      n: 1,
-      stop: null,
-      temperature: 0.7,
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-    },
-  );
-
-  const summary = response.data.choices[0].text.trim();
-  return summary;
+    const content = `下記に示す文章を300字ないで要約してください。${text}`
+    const response = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo-0301",
+        messages: [{ role: "user", content: content }],
+    });
+    
+    const answer = response.data.choices[0].message?.content;
+    console.log(answer);
+    return answer;
 }
 
 const apiRoute = nextConnect<CustomNextApiRequest, NextApiResponse>();
@@ -63,20 +57,21 @@ const apiRoute = nextConnect<CustomNextApiRequest, NextApiResponse>();
 apiRoute.use(upload.single('file'));
 
 apiRoute.post(async (req, res) => {
-  const file = req.file;
-  if (!file) {
-    res.status(400).json({ error: 'No file provided' });
-    return;
-  }
-
-  try {
-    const buffer = file.buffer;
-    const text = await handleFile(buffer, file.mimetype);
-    const summary = await summarizeText(text);
-    res.status(200).json({ summary });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to process file' });
-  }
-});
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: 'No file provided' });
+      return;
+    }
+  
+    try {
+      const buffer = new Buffer(file.buffer);
+      const text = await handleFile(buffer, file.mimetype);
+      const summary = await summarizeText(text);
+      res.status(200).json({ summary });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: `Failed to process file: ${error.message}` });
+    }
+  });
 
 export default apiRoute;

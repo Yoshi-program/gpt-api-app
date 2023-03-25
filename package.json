@@ -4,7 +4,8 @@
     "dev": "next",
     "build": "next build",
     "start": "next start",
-    "type-check": "tsc"
+    "type-check": "tsc",
+    "debug": "NODE_OPTIONS='--inspect' next"
   },
   "dependencies": {
     "@material-ui/core": "^4.12.4",
@@ -13,6 +14,7 @@
     "multer": "^1.4.5-lts.1",
     "next": "latest",
     "next-connect": "^0.13.0",
+    "openai": "^3.2.1",
     "pdf-parse": "^1.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
